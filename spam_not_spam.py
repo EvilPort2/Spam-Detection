@@ -83,15 +83,15 @@ def create_training_testing():
 		messages = f.read().split('\n')
 
 	print("Creating bag of words....")
-	all_messages = []														# stores all the messages along with their classification
-	all_words = []															# bag of words
+	all_messages = []								# stores all the messages along with their classification
+	all_words = []									# bag of words
 	for message in messages:			
 		if message.split('\t')[0] == "spam":
 			all_messages.append([message.split('\t')[1], "spam"])
 		else:
 			all_messages.append([message.split('\t')[1], "ham"])
 		
-		for s in string.punctuation:										# Remove punctuations
+		for s in string.punctuation:						# Remove punctuations
 			if s in message:
 				message = message.replace(s, " ")
 		for word in message.split(" "):
@@ -104,7 +104,7 @@ def create_training_testing():
 	random.shuffle(all_messages)
 
 	all_words = nltk.FreqDist(all_words)
-	word_features = list(all_words.keys())[:500]							# top 500 words are our features
+	word_features = list(all_words.keys())[:500]					# top 500 words are our features
 
 	print("\nCreating feature set....")
 	featureset = [(find_feature(word_features, message), category) for (message, category) in all_messages]
