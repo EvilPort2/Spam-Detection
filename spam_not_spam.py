@@ -1,6 +1,8 @@
 import nltk
 import random
 import os
+from nltk.corpus import stopwords
+from sklearn.model_selection import cross_val_score
 from nltk.classify.scikitlearn import SklearnClassifier
 from sklearn.naive_bayes import MultinomialNB,BernoulliNB
 from sklearn.linear_model import LogisticRegression,SGDClassifier
@@ -19,7 +21,7 @@ def find_feature(word_features, message):
 	# find features of a message
 	feature = {}
 	for word in word_features:
-		feature[word] = (word in message.lower()) 
+		feature[word] = word in message.lower()
 	return feature
 
 def create_mnb_classifier(trainingset, testingset):
@@ -67,14 +69,6 @@ def create_nb_classifier(trainingset, testingset):
     NB_classifier.show_most_informative_features(20)
     return NB_classifier
 
-def create_dt_classifier(trainingset, testingset):
-	# Decision tree classifier
-    print("\nDecision Tree classifier is being trained and created...")
-    DT_classifier = nltk.DecisionTreeClassifier.train(trainingset)
-    accuracy = nltk.classify.accuracy(DT_classifier, testingset)*100
-    print("Decision Tree Classifier accuracy = " + str(accuracy))
-    return DT_classifier
-
 def create_training_testing():
 	"""
 	function that creates the feature set, training set, and testing set
@@ -83,19 +77,21 @@ def create_training_testing():
 		messages = f.read().split('\n')
 
 	print("Creating bag of words....")
-	all_messages = []								# stores all the messages along with their classification
-	all_words = []									# bag of words
+	all_messages = []														# stores all the messages along with their classification
+	all_words = []															# bag of words
 	for message in messages:			
 		if message.split('\t')[0] == "spam":
 			all_messages.append([message.split('\t')[1], "spam"])
 		else:
 			all_messages.append([message.split('\t')[1], "ham"])
 		
-		for s in string.punctuation:						# Remove punctuations
+		for s in string.punctuation:										# Remove punctuations
 			if s in message:
 				message = message.replace(s, " ")
-		for word in message.split(" "):
-			if word.isalpha():
+		
+		stop = stopwords.words('english')
+		for word in message.split(" "):										# Remove stopwords
+			if not word in stop:
 				all_words.append(word.lower())
 	print("Bag of words created.")
 
@@ -104,7 +100,7 @@ def create_training_testing():
 	random.shuffle(all_messages)
 
 	all_words = nltk.FreqDist(all_words)
-	word_features = list(all_words.keys())[:500]					# top 500 words are our features
+	word_features = list(all_words.keys())[:2000]							# top 2000 words are our features
 
 	print("\nCreating feature set....")
 	featureset = [(find_feature(word_features, message), category) for (message, category) in all_messages]
@@ -116,26 +112,28 @@ def create_training_testing():
 	print("Length of training set ", len(trainingset))
 	print("Length of testing set ", len(testingset))
 
-	return word_features, trainingset, testingset
-
+	return word_features, featureset, trainingset, testingset
 
 def main():
 	"""
 	this function is used to show how to use this program.
 	the models can be pickled if wanted or needed.
-	i have used 2 mails to check if my models are working correctly.
+	i have used 4 mails to check if my models are working correctly.
 	"""
 
-	word_features, trainingset, testingset = create_training_testing()
+	word_features, featureset, trainingset, testingset = create_training_testing()
 	NB_classifier = create_nb_classifier(trainingset, testingset)
 	MNB_classifier = create_mnb_classifier(trainingset, testingset)
 	BNB_classifier = create_bnb_classifier(trainingset, testingset)
 	LR_classifier = create_logistic_regression_classifier(trainingset, testingset)
 	SGD_classifier = create_sgd_classifier(trainingset, testingset)
-	DT_classifier = create_dt_classifier(trainingset, testingset)
+	"""DT_classifier = create_dt_classifier(trainingset, testingset)"""
 
 	mails = ["Free entry in 2 a wkly comp to win FA Cup final tkts 21st May 2005. Text FA to 87121 to receive entry question(std txt rate)T&C's apply 08452810075over18's",\
-	 "Hello Ward, It has been almost 3 months since i have written you. Hope you are well."]
+	 "Hello Ward, It has been almost 3 months since i have written you. Hope you are well.", \
+	 "FREE FREE FREE Get a chance to win 10000 $ for free. Also get a chance to win a car and a house",\
+	 "Hello my friend, How are you? It is has been 3 months since we talked. Hope you are well. Can we meet at my place?"]
+	
 	print("\n")
 	print("Naive Bayes")
 	print("-----------")
@@ -170,14 +168,6 @@ def main():
 	for mail in mails:
 		feature = find_feature(word_features, mail)
 		print(SGD_classifier.classify(feature))
-		
-	print("\n")
-	print("Decision Tree")
-	print("-----------")
-	for mail in mails:
-		feature = find_feature(word_features, mail)
-		print(DT_classifier.classify(feature))
-		
-
+		 
 		
 main()
